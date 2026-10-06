@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "pre-push: running lint, typecheck, tests, and audit (skip once with git push --no-verify)"
+exec pnpm check

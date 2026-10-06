@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String    @unique
+  position  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  products  Product[]
+
+  @@map("category")
+}
+
+model Product {
+  id          String    @id @default(uuid()) @db.Uuid
+  categoryId  String    @map("category_id") @db.Uuid
+  name        String
+  slug        String    @unique
+  description String
+  material    String
+  colourName  String?   @map("colour_name")
+  colourHex   String?   @map("colour_hex")
+  styleGroup  String?   @map("style_group")
+  images      String[]
+  isPublished Boolean   @default(false) @map("is_published")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  category    Category  @relation(fields: [categoryId], references: [id])
+  variants    Variant[]
+
+  @@index([categoryId])
+  @@index([styleGroup])
+  @@map("product")
+}
+
+model Variant {
+  id          String      @id @default(uuid()) @db.Uuid
+  productId   String      @map("product_id") @db.Uuid
+  name        String
+  price       Int
+  stock       Int
+  reserved    Int         @default(0)
+  weightGrams Int         @map("weight_grams")
+  position    Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartLines   CartLine[]
+  orderLines  OrderLine[]
+
+  @@unique([productId, name])
+  @@map("variant")
+}
+
+enum Role {
+  customer
+  admin
+  demo_admin
+}
+
+model Customer {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  phone        String?
+  role         Role      @default(customer)
+  isSeeded     Boolean   @default(false) @map("is_seeded")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  sessions     Session[]
+  cart         Cart?
+  orders       Order[]
+  emails       EmailMessage[]
+  resets       PasswordReset[]
+
+  @@map("customer")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("session")
+}
+
+model PasswordReset {
+  id         String    @id @default(uuid()) @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("password_reset")
+}
+
+model RateLimit {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, windowStart])
+  @@map("rate_limit")
+}
+
+model Cart {
+  id         String     @id @default(uuid()) @db.Uuid
+  customerId String     @unique @map("customer_id") @db.Uuid
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lines      CartLine[]
+
+  @@map("cart")
+}
+
+model CartLine {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@map("cart_line")
+}
+
+enum OrderStatus {
+  awaiting_payment
+  paid
+  shipped
+  completed
+  cancelled
+  refunded
+}
+
+model Order {
+  id            String      @id @default(uuid()) @db.Uuid
+  customerId    String      @map("customer_id") @db.Uuid
+  orderNumber   String      @unique @map("order_number")
+  status        OrderStatus @default(awaiting_payment)
+  subtotal      Int
+  shippingFee   Int         @map("shipping_fee")
+  total         Int
+  recipientName String      @map("recipient_name")
+  phone         String
+  street        String
+  district      String
+  city          String
+  province      String
+  postalCode    String      @map("postal_code")
+  payBy         DateTime    @map("pay_by")
+  paidAt        DateTime?   @map("paid_at")
+  shippedAt     DateTime?   @map("shipped_at")
+  cancelledAt   DateTime?   @map("cancelled_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lines         OrderLine[]
+  payments      Payment[]
+  emails        EmailMessage[]
+
+  @@index([customerId, createdAt])
+  @@index([status, payBy])
+  @@map("order")
+}
+
+model OrderLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  variantId   String   @map("variant_id") @db.Uuid
+  productName String   @map("product_name")
+  variantName String   @map("variant_name")
+  productSlug String   @map("product_slug")
+  image       String?
+  unitPrice   Int      @map("unit_price")
+  quantity    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant     Variant  @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("order_line")
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  expired
+  partially_refunded
+  refunded
+}
+
+model Payment {
+  id               String                @id @default(uuid()) @db.Uuid
+  orderId          String                @map("order_id") @db.Uuid
+  gateway          String
+  gatewayReference String                @unique @map("gateway_reference")
+  attempt          Int
+  status           PaymentStatus         @default(pending)
+  amount           Int
+  method           String?
+  snapToken        String?               @map("snap_token")
+  redirectUrl      String?               @map("redirect_url")
+  expiresAt        DateTime?             @map("expires_at")
+  paidAt           DateTime?             @map("paid_at")
+  needsReview      Boolean               @default(false) @map("needs_review")
+  reviewReason     String?               @map("review_reason")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+  order            Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  notifications    PaymentNotification[]
+  refunds          Refund[]
+
+  @@unique([orderId, attempt])
+  @@index([status, expiresAt])
+  @@map("payment")
+}
+
+model PaymentNotification {
+  id               String   @id @default(uuid()) @db.Uuid
+  paymentId        String?  @map("payment_id") @db.Uuid
+  gatewayReference String?  @map("gateway_reference")
+  receivedAt       DateTime @default(now()) @map("received_at")
+  rawBody          String   @map("raw_body")
+  signatureValid   Boolean  @map("signature_valid")
+  applied          Boolean  @default(false)
+  outcome          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  payment          Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId])
+  @@map("payment_notification")
+}
+
+enum RefundStatus {
+  pending
+  succeeded
+  failed
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  paymentId        String       @map("payment_id") @db.Uuid
+  amount           Int
+  reason           String
+  gatewayRefundKey String       @unique @map("gateway_refund_key")
+  status           RefundStatus @default(pending)
+  failureReason    String?      @map("failure_reason")
+  requestedById    String?      @map("requested_by_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  payment          Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@map("refund")
+}
+
+model Subscriber {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique
+  unsubscribeToken String    @unique @map("unsubscribe_token")
+  subscribedAt     DateTime  @default(now()) @map("subscribed_at")
+  unsubscribedAt   DateTime? @map("unsubscribed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("subscriber")
+}
+
+enum EmailKind {
+  order_confirmed
+  order_shipped
+  password_reset
+}
+
+enum EmailStatus {
+  recorded
+  sent
+  failed
+}
+
+model EmailMessage {
+  id         String      @id @default(uuid()) @db.Uuid
+  kind       EmailKind
+  dedupeKey  String      @unique @map("dedupe_key")
+  customerId String      @map("customer_id") @db.Uuid
+  orderId    String?     @map("order_id") @db.Uuid
+  toAddress  String      @map("to_address")
+  subject    String
+  body       String
+  status     EmailStatus @default(recorded)
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order      Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([orderId])
+  @@map("email_message")
+}

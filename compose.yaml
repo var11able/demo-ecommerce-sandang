@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sandang
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - sandang-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sandang"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  sandang-db:

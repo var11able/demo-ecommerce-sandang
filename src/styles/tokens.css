@@ -1,0 +1,70 @@
+@theme {
+  --color-*: initial;
+  --color-page: #ffffff;
+  --color-ink: #000000;
+  --color-ink-soft: #333333;
+  --color-muted: #5c5c5c;
+  --color-surface: #ffffff;
+  --color-fog: #f0efe7;
+  --color-line: #e5e7eb;
+  --color-success: #1d6b45;
+  --color-warning: #8a5a00;
+  --color-danger: #8e1b12;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --text-*: initial;
+  --text-label: 12px;
+  --text-label--line-height: 1.33;
+  --text-caption: 14px;
+  --text-caption--line-height: 1.33;
+  --text-body: 15px;
+  --text-body--line-height: 1.4;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.4;
+  --text-subheading: 18px;
+  --text-subheading--line-height: 1.3;
+  --text-heading-sm: 20px;
+  --text-heading-sm--line-height: 1.2;
+  --text-heading: 24px;
+  --text-heading--line-height: 1.2;
+  --text-heading-lg: 30px;
+  --text-heading-lg--line-height: 1.2;
+  --text-display: 40px;
+  --text-display--line-height: 1.1;
+
+  --font-weight-*: initial;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --tracking-*: initial;
+  --tracking-text: 0.025em;
+  --tracking-label: 0.06em;
+
+  --radius-*: initial;
+  --radius-control: 4px;
+
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+
+  --aspect-product: 4 / 5;
+  --aspect-hero: 8 / 3;
+
+  --spacing: 4px;
+  --container-*: initial;
+  --container-content: 1440px;
+  --container-prose: 65ch;
+  --container-form: 480px;
+
+  --ease-*: initial;
+  --ease-arrive: cubic-bezier(0, 0, 0.2, 1);
+  --ease-leave: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@theme inline {
+  --font-*: initial;
+  --font-text: var(--font-inter), system-ui, sans-serif;
+}
